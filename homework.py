@@ -13,8 +13,6 @@ from dotenv import load_dotenv
 
 from exeptions import ApiError, ParseNoneStatus, TelegramBot, TokenError
 
-
-
 load_dotenv()
 
 logging.basicConfig(
@@ -61,19 +59,7 @@ def send_message(bot: telegram.Bot, message: str):
 
 
 def get_api_answer(current_timestamp: int) -> dict:
-    """Делает запрос к API-сервису.
-
-    Функция get_api_answer() делает запрос к единственному эндпоинту
-    API-сервиса. В качестве параметра функция получает временную метку.
-
-    :param current_timestamp: unitime - временная метка
-    :type current_timestamp: int
-    :return: возвращает API запрос преобразовав его из формата JSON к
-    типам данных Python.
-    :rtype: dict
-
-    :raises ApiError: Возникает ошибка при ошибках обращения к API
-    """
+    """Делает запрос к API-сервису."""
     if not isinstance(current_timestamp, (int, float)):
         timestamp = int(time.time())
         logger.error(
@@ -94,36 +80,19 @@ def get_api_answer(current_timestamp: int) -> dict:
         )
         homework_status_code = homework_statuses.status_code
         if homework_status_code != HTTPStatus.OK:
-            if homework_status_code == HTTPStatus.UNAUTHORIZED:
-                homework_statuses = homework_statuses.json()
-                homework_status_request = (
-                    homework_statuses.get("code")
-                    or homework_statuses.get("error")
-                )
-                print(homework_statuses)
-                raise ApiError(
-                    f"Обнаружена ошибка возвращаемая API: "
-                    f"{homework_status_request} - "
-                    f"{homework_statuses.get('message')}"
-                )
-            else:
-                raise ApiError(
-                    f"Ошибка: {HTTPStatus(homework_status_code).phrase}"
-                )
+            raise ApiError(
+                f"Ошибка: {HTTPStatus(homework_status_code).phrase}"
+            )
         else:
             homework_statuses = homework_statuses.json()
     except requests.ConnectionError as e:
-        error_message = (
-            "OOPS!! ошибка соединения. Убедитесь, что вы подключены к "
-            "Интернету. Технические подробности приведены ниже.\n",
-            e,
-        )
+        error_message = "OOPS!! ошибка соединения."
         raise ApiError(error_message) from e
     except requests.Timeout as e:
-        error_message = ("OOPS!! Ошибка тайм-аута", e)
+        error_message = "OOPS!! Ошибка тайм-аута"
         raise ApiError(error_message) from e
     except requests.RequestException as e:
-        error_message = ("OOPS!! General Error", e)
+        error_message = "OOPS!! General Error"
         raise ApiError(error_message) from e
     except KeyboardInterrupt as exc:
         error_message = "Кто-то закрыл программу"
@@ -137,21 +106,7 @@ def get_api_answer(current_timestamp: int) -> dict:
 
 
 def check_response(response) -> Union[bool, dict]:
-    """Проверка API на корректность.
-
-    Функция проверяет ответ API на корректность.
-    В качестве параметра функция получает ответ от API, в формате dict.
-    Если ответ API соответствует ожиданиям, то
-    функция возвращает список домашних работ (он может быть и пустым)
-
-    :param response: Ответ от API в формате dict
-    :type response: dict
-
-    :return: Возвратит список домашних работ.
-    :rtype: dict
-
-    :raises TokenError: Ошибка в случае некорректности ответа API
-    """
+    """Проверка API на корректность."""
     if not response["homeworks"]:
         return False
     elif not isinstance(response["homeworks"], list):
@@ -161,18 +116,7 @@ def check_response(response) -> Union[bool, dict]:
 
 
 def parse_status(homework: dict) -> Union[bool, str]:
-    """Функция извлекает информацию о конкретной домашней работе.
-
-
-    :param homework: Один элемент из списка домашних работ.
-    :type homework: dict
-
-    :return: В случае корректности возвращается сообщение, иначе
-    булевое значение
-    :rtype: bool|str
-
-    :raises ParseNoneStatus: Недокументированный статус домашней работы
-    """
+    """Функция извлекает информацию о конкретной домашней работе."""
     if homework:
         homework_name = homework["homework_name"]
         homework_status = homework["status"]
@@ -193,10 +137,13 @@ def check_tokens() -> bool:
     if all(tokens):
         return True
     else:
-        missing = [name for name, value in zip(["PRACTICUM_TOKEN", "TELEGRAM_TOKEN",
-                                                "TELEGRAM_CHAT_ID"], tokens) if not value]
+        missing = [name for name, value in zip(["PRACTICUM_TOKEN",
+                                                "TELEGRAM_TOKEN",
+                                                "TELEGRAM_CHAT_ID"],
+                                               tokens) if not value]
         for token_name in missing:
-            logger.critical(f"Отсутствует обязательная переменная окружения: {token_name}")
+            logger.critical(
+                f"Отсутствует обязательная переменная окружения: {token_name}")
         return False
 
 
