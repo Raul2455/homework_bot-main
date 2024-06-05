@@ -1,65 +1,50 @@
-from telegram import TelegramError
+class ApiError(Exception):
+    """Ошибка при обращении к API."""
 
-
-class BotKeyError(KeyError):
-    """Ошибка возникает в случае отсутствия ключа словаря.
-    В аргументах указывается проверяемый словарь и имя ключа.
-    """
-
-    def __init__(self, dictionary, key):
+    def __init__(self, message, *args):
         """
-        Инициализация ошибки.
+        Инициализация исключения ApiError.
 
-        Args:
-            dictionary (dict): Словарь, в котором произошла ошибка.
-            key: Ключ, отсутствующий в словаре.
+        :param message: Сообщение об ошибке
+        :type message: str
         """
-        self.dictionary = dictionary
-        self.key = key
+        super().__init__(message, *args)
 
-    def __str__(self):
+
+class TokenError(Exception):
+    """Ошибка при отсутствии токенов."""
+
+    def __init__(self, message, *args):
         """
-        Возвращает строковое представление ошибки.
+        Инициализация исключения TokenError.
 
-        Returns:
-            str: Описание ошибки.
+        :param message: Сообщение об ошибке
+        :type message: str
         """
-        return f'в словаре {self.dictionary} нет ключа "{self.key}"!'
+        super().__init__(message, *args)
 
 
-class BotTypeError(TypeError):
-    """Ошибка возникает в случае несоответствия типов данных.
-    В аргументах указывается проверяемый объект и ожидаемый тип данных.
-    """
+class ParseNoneStatus(Exception):
+    """Ошибка при получении недокументированного статуса."""
 
-    def __init__(self, obj, expected_type):
+    def __init__(self, message, *args):
         """
-        Инициализация ошибки.
+        Инициализация исключения ParseNoneStatus.
 
-        Args:
-            obj: Объект с некорректным типом данных.
-            expected_type (type): Ожидаемый тип данных.
+        :param message: Сообщение об ошибке
+        :type message: str
         """
-        self.obj = obj
-        self.expected_type = expected_type
+        super().__init__(message, *args)
 
-    def __str__(self):
+
+class TelegramBot(Exception):
+    """Ошибка при отправке сообщения в Telegram."""
+
+    def __init__(self, message, *args):
         """
-        Возвращает строковое представление ошибки.
+        Инициализация исключения TelegramBot.
 
-        Returns:
-            str: Описание ошибки.
+        :param message: Сообщение об ошибке
+        :type message: str
         """
-        return f"тип данных {self.obj} не '{self.expected_type}'!"
-
-
-class ResponseError(Exception):
-    """Базовый класс для ошибок, связанных с ответами."""
-
-    pass
-
-
-class SendMessageError(TelegramError):
-    """Ошибка возникает при отправке сообщения через Telegram."""
-
-    pass
+        super().__init__(message, *args)
