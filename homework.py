@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from exeptions import ApiError, ParseNoneStatus, TelegramBot, TokenError
 
 
+
 load_dotenv()
 
 logging.basicConfig(
@@ -49,23 +50,14 @@ HOMEWORK_STATUSES = {
 }
 
 
-def send_message(bot: telegram, message: str):
-    """Функция отправляет сообщения в Telegram чат.
-
-    Отправляет сообщение в Telegram чат, определяемый
-    переменной окружения TELEGRAM_CHAT_ID
-
-    :param bot: экземпляр класса Bot
-    :type bot: telegram.Bot
-    :param message: Строка с текстом сообщения
-    :type message: str
-    """
+def send_message(bot: telegram.Bot, message: str):
+    """Функция отправляет сообщения в Telegram чат."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.info("Сообщение успешно отправлено")
+        logger.info("Сообщение успешно отправлено")
     except Exception as send_message_error:
-        raise TelegramBot('Ошибка отправки сообщения',
-                          send_message_error) from send_message_error
+        logger.error(f'Ошибка отправки сообщения: {send_message_error}')
+        raise
 
 
 def get_api_answer(current_timestamp: int) -> dict:
@@ -196,28 +188,15 @@ def parse_status(homework: dict) -> Union[bool, str]:
 
 
 def check_tokens() -> bool:
-    """Функция проверяет доступность обязательных переменных.
-
-    Функция проверяет доступность переменных с токенами в файле .evn
-    при его отсутствии, требуется создать, пример в .evn.example.
-
-    :return: если все переменные - возвращает True
-    :rtype: bool
-
-    :raises TokenError: Отсутствие обязательной переменной
-    """
-    tokens = [
-        PRACTICUM_TOKEN,
-        TELEGRAM_TOKEN,
-        TELEGRAM_CHAT_ID,
-    ]
+    """Функция проверяет доступность обязательных переменных."""
+    tokens = [PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]
     if all(tokens):
         return True
     else:
-        for token in [PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]:
-            if not token:
-                logger.critical(
-                    f"Отсутствует обязательная переменная окружения: {token}")
+        missing = [name for name, value in zip(["PRACTICUM_TOKEN", "TELEGRAM_TOKEN",
+                                                "TELEGRAM_CHAT_ID"], tokens) if not value]
+        for token_name in missing:
+            logger.critical(f"Отсутствует обязательная переменная окружения: {token_name}")
         return False
 
 
@@ -284,7 +263,6 @@ def main():
     """Основная логика работы бота."""
     if not check_tokens():
         sys.exit()
-
     bot = get_bot()
     current_timestamp = int(time.time())
 
@@ -292,12 +270,8 @@ def main():
         try:
             current_timestamp = process_homework(bot, current_timestamp)
             time.sleep(RETRY_TIME)
-        except (TelegramBot, ParseNoneStatus, TokenError, ApiError,
-                requests.exceptions.RequestException,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout, KeyboardInterrupt) as error:
-            message = f"Сбой в работе программы: {error}"
-            logger.error(message)
+        except Exception as error:
+            logger.error(f"Сбой в работе программы: {error}")
             time.sleep(RETRY_TIME)
 
 
