@@ -37,7 +37,7 @@ PRACTICUM_TOKEN = os.getenv("PRACTICUM_TOKEN")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-RETRY_PERIOD = 600  # Убедитесь, что переменная объявлена корректно
+RETRY_PERIOD = 600
 ENDPOINT = "https://practicum.yandex.ru/api/user_api/homework_statuses/"
 HEADERS = {"Authorization": f"OAuth {PRACTICUM_TOKEN}"}
 
@@ -141,7 +141,7 @@ def main():
     """Основная функция для запуска бота."""
     if not check_tokens():
         sys.exit()
-    bot = get_bot()  # Убедитесь, что бот инициализируется только здесь
+    bot = get_bot()
     current_timestamp = int(time.time())
     while True:
         try:
@@ -149,7 +149,11 @@ def main():
             time.sleep(RETRY_PERIOD)
         except Exception as e:
             logger.error("Сбой в работе программы: %s", e)
-            send_message(bot, f"Сбой в работе программы: {e}")
+            try:
+                send_message(bot, f"Сбой в работе программы: {e}")
+            except Exception as inner_exception:
+                logger.error("Ошибка при отправке сообщения об ошибке: %s",
+                             inner_exception)
             time.sleep(RETRY_PERIOD)
 
 
