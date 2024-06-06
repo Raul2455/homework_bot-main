@@ -41,7 +41,7 @@ RETRY_PERIOD = 600
 ENDPOINT = "https://practicum.yandex.ru/api/user_api/homework_statuses/"
 HEADERS = {"Authorization": f"OAuth {PRACTICUM_TOKEN}"}
 
-HOMEWORK_VERDICTS = {  # Исправлено название константы
+HOMEWORK_VERDICTS = {
     "approved": "Работа проверена: ревьюеру всё понравилось. Ура!",
     "reviewing": "Работа взята на проверку ревьюером.",
     "rejected": "Работа проверена: у ревьюера есть замечания.",
@@ -141,7 +141,7 @@ def main():
     """Основная функция для запуска бота."""
     if not check_tokens():
         sys.exit()
-    bot = get_bot()  # Убедитесь, что бот инициализируется только здесь
+    bot = get_bot()
     current_timestamp = int(time.time())
     while True:
         try:
