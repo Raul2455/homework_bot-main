@@ -1,4 +1,4 @@
-"""Основной модуль бота для проверки статусов домашних работ."""
+"""Главный модуль бота для проверки статуса домашней работы."""
 
 import logging
 import os
@@ -37,7 +37,7 @@ PRACTICUM_TOKEN = os.getenv("PRACTICUM_TOKEN")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-RETRY_PERIOD = 600
+RETRY_PERIOD = 600  # Убедитесь, что переменная объявлена корректно
 ENDPOINT = "https://practicum.yandex.ru/api/user_api/homework_statuses/"
 HEADERS = {"Authorization": f"OAuth {PRACTICUM_TOKEN}"}
 
@@ -49,7 +49,7 @@ HOMEWORK_STATUSES = {
 
 
 def send_message(bot: telegram.Bot, message: str):
-    """Функция отправляет сообщения в Telegram чат."""
+    """Отправляет сообщение через бота в Telegram."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.debug("Сообщение успешно отправлено")
@@ -59,16 +59,13 @@ def send_message(bot: telegram.Bot, message: str):
 
 
 def get_api_answer(current_timestamp: int) -> dict:
-    """Делает запрос к API-сервису."""
+    """Запрашивает данные о домашней работе через API Яндекс.Практикум."""
     timestamp = current_timestamp if isinstance(
         current_timestamp, int) else int(time.time())
-
     params = {"from_date": timestamp}
-
     try:
-        homework_statuses = requests.get(ENDPOINT,
-                                         headers=HEADERS,
-                                         params=params, timeout=10)
+        homework_statuses = requests.get(
+            ENDPOINT, headers=HEADERS, params=params, timeout=10)
         if homework_statuses.status_code != HTTPStatus.OK:
             raise ApiError(
                 f"Ошибка: {HTTPStatus(homework_statuses.status_code).phrase}")
@@ -79,8 +76,10 @@ def get_api_answer(current_timestamp: int) -> dict:
 
 
 def check_response(response) -> Union[bool, dict]:
-    """Проверка API на корректность."""
-    if "homeworks" not in response or not response["homeworks"]:
+    """Проверяет ответ API на корректность."""
+    if not isinstance(response, dict):
+        raise TypeError("Ответ API не является словарем")
+    if "homeworks" not in response:
         raise KeyError("Ответ API не содержит ключ 'homeworks'")
     if not isinstance(response["homeworks"], list):
         raise TypeError("Некорректный тип данных для 'homeworks'")
@@ -88,30 +87,25 @@ def check_response(response) -> Union[bool, dict]:
 
 
 def parse_status(homework: dict) -> str:
-    """Функция извлекает информацию о конкретной домашней работе."""
+    """Извлекает статус домашней работы из данных API."""
     if "homework_name" not in homework or "status" not in homework:
-        raise KeyError(
-            "Ответ API не содержит необходимых ключей"
-            "'homework_name' или 'status'")
+        raise KeyError("В API отсутствуют ключи 'homework_name' или 'status'")
     homework_name = homework["homework_name"]
     homework_status = homework["status"]
-
     verdict = HOMEWORK_STATUSES.get(homework_status)
     if verdict is None:
         raise ValueError(
             f"Неизвестный статус домашней работы: {homework_status}")
-
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def check_tokens() -> bool:
-    """Функция проверяет доступность обязательных переменных."""
+    """Проверяет наличие необходимых переменных окружения."""
     tokens = [PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]
     if not all(tokens):
-        missing = [name for name, value in zip(["PRACTICUM_TOKEN",
-                                                "TELEGRAM_TOKEN",
-                                                "TELEGRAM_CHAT_ID"],
-                                               tokens) if not value]
+        missing = [name for name, value in zip(
+            ["PRACTICUM_TOKEN", "TELEGRAM_TOKEN",
+             "TELEGRAM_CHAT_ID"], tokens) if not value]
         for token_name in missing:
             logger.critical(
                 "Отсутствует обязательная переменная окружения: %s",
@@ -121,7 +115,7 @@ def check_tokens() -> bool:
 
 
 def get_bot() -> telegram.Bot:
-    """Инициализирует бота."""
+    """Инициализирует и возвращает объект бота."""
     try:
         return telegram.Bot(token=TELEGRAM_TOKEN)
     except telegram.error.TelegramError as e:
@@ -130,23 +124,25 @@ def get_bot() -> telegram.Bot:
 
 
 def process_homework(bot: telegram.Bot, current_timestamp: int) -> int:
-    """Обрабатывает домашнюю работу, отправляет сообщение в Telegram."""
+    """
+    Обрабатывает статус домашней работы.
+    и отправляет сообщение через бота.
+    """
     response = get_api_answer(current_timestamp)
     homeworks = check_response(response)
     if homeworks:
         message = parse_status(homeworks[0])
         send_message(bot, message)
-        current_timestamp = response.get("current_date", current_timestamp)
+    current_timestamp = response.get("current_date", current_timestamp)
     return current_timestamp
 
 
 def main():
-    """Основная логика работы бота."""
+    """Основная функция для запуска бота."""
     if not check_tokens():
         sys.exit()
-    bot = get_bot()
+    bot = get_bot()  # Убедитесь, что бот инициализируется только здесь
     current_timestamp = int(time.time())
-
     while True:
         try:
             current_timestamp = process_homework(bot, current_timestamp)
