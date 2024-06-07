@@ -4,7 +4,7 @@ import time
 
 from http import HTTPStatus
 import requests
-import telegram
+from telegram import Bot
 from dotenv import dotenv_values
 
 
@@ -119,7 +119,7 @@ def main():
         )
         sys.exit("Нехватка токенов.")
 
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    bot = Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     send_message(bot, "Я включился, отслеживаю изменения.")
     last_message = ""
