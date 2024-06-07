@@ -3,10 +3,7 @@ from types import ModuleType
 
 
 def check_function(scope: ModuleType, func_name: str, params_qty: int = 0):
-    """
-    Проверяет, есть ли в области видимости функция.
-    с заданным именем и числом параметров.
-    """
+    """Checks if scope has a function with specific name and params with qty"""
     assert hasattr(scope, func_name), (
         f'Не найдена функция `{func_name}`. '
         'Не удаляйте и не переименовывайте её.'
@@ -33,10 +30,10 @@ def check_default_var_exists(scope: ModuleType, var_name: str) -> None:
     :return: None. It's an assert
     """
     assert hasattr(scope, var_name), (
-        f'Не найдена переменная `{var_name}`. '
-        'Не удаляйте и не переименовывайте ее.'
+        f'Не найдена переменная `{var_name}`. Не удаляйте и не переименовывайте ее.'
     )
     var = getattr(scope, var_name)
     assert not callable(var), (
         f'{var_name} должна быть переменной, а не функцией.'
     )
+
