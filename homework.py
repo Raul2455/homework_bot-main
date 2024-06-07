@@ -2,10 +2,11 @@ import logging
 import sys
 import time
 
+from http import HTTPStatus
 import requests
 import telegram
 from dotenv import dotenv_values
-from http import HTTPStatus
+
 
 from exceptions import EndpointError, HavingStatusError
 
