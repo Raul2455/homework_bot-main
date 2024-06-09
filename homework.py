@@ -34,8 +34,8 @@ def check_tokens():
     if missing_tokens:
         missing = ', '.join(missing_tokens)
         error_message = (
-            "Отсутствуют токены: %s. Программа была принудительно "
-            "остановлена." % missing
+            "Отсутствуют токены: %s. Программа была"
+            " принудительно остановлена.", missing
         )
         logging.critical(error_message)
         sys.exit(f"Нехватка токенов: {missing}.")
@@ -48,21 +48,20 @@ def send_message(bot, message):
         logging.debug("Бот отправил сообщение: %s", message)
     except apihelper.ApiException as error:
         logging.error("Ошибка при отправке сообщения: %s", error)
-        raise
 
 
 def get_api_answer(timestamp):
     """Делает запрос к API."""
     params = {"from_date": timestamp}
-    logging.info(f"Отправка запроса на {ENDPOINT} с параметрами {params}")
+    logging.info("Отправка запроса на %s с параметрами %s", ENDPOINT, params)
 
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
     except requests.RequestException as error:
-        raise RuntimeError(f"Ошибка при запросе к API: {error}")
+        raise RuntimeError("Ошибка при запросе к API: %s", error)
 
     if response.status_code != HTTPStatus.OK:
-        raise ValueError(f"Ошибка запроса к API: {response.text}")
+        raise ValueError("Ошибка запроса к API: %s", response.text)
 
     return response.json()
 
@@ -70,16 +69,15 @@ def get_api_answer(timestamp):
 def check_response(response):
     """Проверяет ответ API."""
     if not isinstance(response, dict):
-        error_message = (
-            'Тип ответа не соответствует "dict", получен %s'
-            % type(response)
-        )
-        raise TypeError(error_message)
+        raise TypeError('Тип ответа не "dict", получен %s', type(response))
     if "homeworks" not in response:
-        raise KeyError('В ответе отсутствует ключ "homeworks".')
+        raise KeyError('В ответе нет ключа "homeworks".')
     if not isinstance(response.get("homeworks"), list):
-        raise TypeError("Формат ответа не соответствует списку.")
-    return response.get("homeworks")
+        raise TypeError(
+            "Формат ответа не список, получен %s.",
+            type(response.get('homeworks'))
+        )
+    return response["homeworks"]
 
 
 def parse_status(homework):
@@ -90,11 +88,10 @@ def parse_status(homework):
     homework_status = homework["status"]
     verdict = HOMEWORK_VERDICTS.get(homework_status)
     if verdict is None:
-        error_message = (
-            "Неизвестный статус домашней работы: %s"
-            % homework_status
+        raise ValueError(
+            "Неизвестный статус домашней работы: %s",
+            homework_status
         )
-        raise ValueError(error_message)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -105,7 +102,7 @@ def main():
     timestamp = int(time.time())
     try:
         send_message(bot, "Я включился, отслеживаю изменения.")
-    except Exception as e:
+    except apihelper.ApiException as e:
         logging.error("Ошибка при отправке стартового сообщения: %s", e)
 
     last_message = ""
@@ -126,7 +123,13 @@ def main():
                 logging.debug("Домашних работ нет.")
             timestamp = response.get("current_date", timestamp)
         except Exception as error:
-            logging.error("Ошибка в работе программы: %s", error)
+            logging.error("Ошибка в работе программы: %s",
+                          error, exc_info=True)
+            try:
+                send_message(bot, f"Возникла ошибка: {error}")
+            except apihelper.ApiException:
+                logging.error("Ошибка при отправке сообщения"
+                              "об ошибке в Telegram")
         finally:
             time.sleep(RETRY_PERIOD)
 
