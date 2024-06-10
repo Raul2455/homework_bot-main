@@ -33,10 +33,7 @@ def check_tokens():
     missing_tokens = [token for token in tokens if not globals().get(token)]
     if missing_tokens:
         missing = ', '.join(missing_tokens)
-        error_message = (
-            "Отсутствуют токены: %s. Программа была"
-            " принудительно остановлена.", missing
-        )
+        error_message = f"Отсутствуют токены: {missing}."
         logging.critical(error_message)
         sys.exit(f"Нехватка токенов: {missing}.")
 
@@ -45,23 +42,24 @@ def send_message(bot, message):
     """Отправляет сообщение в Telegram чат."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.debug("Бот отправил сообщение: %s", message)
+        logging.debug(f"Бот отправил сообщение: {message}")
     except apihelper.ApiException as error:
-        logging.error("Ошибка при отправке сообщения: %s", error)
+        logging.error(f"Ошибка при отправке сообщения: {error}")
+        raise
 
 
 def get_api_answer(timestamp):
     """Делает запрос к API."""
     params = {"from_date": timestamp}
-    logging.info("Отправка запроса на %s с параметрами %s", ENDPOINT, params)
+    logging.info(f"Отправка запроса на {ENDPOINT} с параметрами {params}")
 
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
     except requests.RequestException as error:
-        raise RuntimeError("Ошибка при запросе к API: %s", error)
+        raise RuntimeError(f"Ошибка при запросе к API: {error}")
 
     if response.status_code != HTTPStatus.OK:
-        raise ValueError("Ошибка запроса к API: %s", response.text)
+        raise ValueError(f"Ошибка запроса к API: {response.text}")
 
     return response.json()
 
@@ -69,13 +67,13 @@ def get_api_answer(timestamp):
 def check_response(response):
     """Проверяет ответ API."""
     if not isinstance(response, dict):
-        raise TypeError('Тип ответа не "dict", получен %s', type(response))
+        raise TypeError(f'Тип ответа не "dict", получен {type(response)}')
     if "homeworks" not in response:
         raise KeyError('В ответе нет ключа "homeworks".')
     if not isinstance(response.get("homeworks"), list):
         raise TypeError(
-            "Формат ответа не список, получен %s.",
-            type(response.get('homeworks'))
+            f"Формат ответа не список,"
+            f"получен {type(response.get('homeworks'))}."
         )
     return response["homeworks"]
 
@@ -89,8 +87,7 @@ def parse_status(homework):
     verdict = HOMEWORK_VERDICTS.get(homework_status)
     if verdict is None:
         raise ValueError(
-            "Неизвестный статус домашней работы: %s",
-            homework_status
+            f"Неизвестный статус домашней работы: {homework_status}"
         )
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
@@ -100,11 +97,6 @@ def main():
     check_tokens()
     bot = TeleBot(TELEGRAM_TOKEN)
     timestamp = int(time.time())
-    try:
-        send_message(bot, "Я включился, отслеживаю изменения.")
-    except apihelper.ApiException as e:
-        logging.error("Ошибка при отправке стартового сообщения: %s", e)
-
     last_message = ""
 
     while True:
@@ -123,13 +115,15 @@ def main():
                 logging.debug("Домашних работ нет.")
             timestamp = response.get("current_date", timestamp)
         except Exception as error:
-            logging.error("Ошибка в работе программы: %s",
-                          error, exc_info=True)
-            try:
-                send_message(bot, f"Возникла ошибка: {error}")
-            except apihelper.ApiException:
-                logging.error("Ошибка при отправке сообщения"
-                              "об ошибке в Telegram")
+            error_message = f"Ошибка в работе программы: {error}"
+            logging.error(error_message, exc_info=True)
+            if last_message != error_message:
+                try:
+                    send_message(bot, error_message)
+                    last_message = error_message
+                except apihelper.ApiException:
+                    logging.error("Ошибка при отправке сообщения"
+                                  "об ошибке в Telegram")
         finally:
             time.sleep(RETRY_PERIOD)
 
